@@ -1178,6 +1178,35 @@ const albums = [
   },
 ];
 
+const DEFAULT_ALBUM_IDS = new Set(albums.map(a => String(a.id)));
+const USER_ALBUMS_STORAGE_KEY = 'you-side:user-albums:v1';
+
+function loadUserAlbums() {
+  try {
+    const raw = localStorage.getItem(USER_ALBUMS_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+    parsed.forEach(a => {
+      if (!a || !a.id || !a.title) return;
+      albums.push(a);
+    });
+  } catch (e) {
+    console.error('Failed to load user albums', e);
+  }
+}
+
+function saveUserAlbums() {
+  try {
+    const userAlbums = albums.filter(a => !DEFAULT_ALBUM_IDS.has(String(a.id)));
+    localStorage.setItem(USER_ALBUMS_STORAGE_KEY, JSON.stringify(userAlbums));
+  } catch (e) {
+    console.error('Failed to save user albums', e);
+  }
+}
+
+loadUserAlbums();
+
 // ============================================================
 // CANVAS LOGIC
 // ============================================================
@@ -1301,10 +1330,16 @@ const positions = [
 ];
 
 albums.forEach((album, i) => {
-  const p = positions[i] || { x: 200 + (i%4)*500, y: 200 + Math.floor(i/4)*500 };
-  album._pos = { x: p.x, y: p.y };
-  album._rot = (Math.random() - 0.5) * 14;
-  album._z = Math.floor(Math.random() * 10) + 1;
+  if (!album._pos) {
+    const p = positions[i] || { x: 200 + (i%4)*500, y: 200 + Math.floor(i/4)*500 };
+    album._pos = { x: p.x, y: p.y };
+  }
+  if (album._rot == null) {
+    album._rot = (Math.random() - 0.5) * 14;
+  }
+  if (album._z == null) {
+    album._z = Math.floor(Math.random() * 10) + 1;
+  }
 });
 
 canvas.innerHTML = albums.map(makeVinylHTML).join('');
@@ -1543,6 +1578,7 @@ document.getElementById('submit-album-btn').addEventListener('click', () => {
 
   albums.push(newAlbum);
   canvas.insertAdjacentHTML('beforeend', makeVinylHTML(newAlbum));
+  saveUserAlbums();
 
   // Fly camera to new album
   setTimeout(() => {
