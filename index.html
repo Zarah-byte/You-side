@@ -1,0 +1,1606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>YOU-SIDE — Musical Identity</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cakra:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;700&display=swap');
+
+  :root {
+    --bg: #050507;
+    --text: #f0ece4;
+    --text-dim: rgba(240,236,228,0.4);
+    --accent1: #ff2d78;
+    --accent2: #7b2fff;
+    --accent3: #00e5ff;
+    --accent4: #ffcc00;
+    --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23noise)' opacity='0.08'/%3E%3C/svg%3E");
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    width: 100vw;
+    height: 100vh;
+    cursor: crosshair;
+    user-select: none;
+  }
+
+  /* GRAIN OVERLAY */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: var(--grain);
+    pointer-events: none;
+    z-index: 9999;
+    opacity: 0.4;
+  }
+
+  /* HEADER */
+  #header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    padding: 20px 36px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    background: rgba(5,5,7,0.85);
+    backdrop-filter: blur(20px);
+  }
+
+  .logo {
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 28px;
+    letter-spacing: -0.5px;
+    color: var(--accent1);
+    -webkit-text-fill-color: var(--accent1);
+  }
+
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .nav-hint {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    color: var(--text-dim);
+    text-transform: uppercase;
+  }
+
+  #add-btn {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background: var(--accent1);
+    color: #000;
+    border: none;
+    padding: 10px 22px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 700;
+    clip-path: polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  }
+  #add-btn:hover { background: var(--text); transform: translateY(-1px); }
+
+  /* CANVAS */
+  #canvas-wrapper {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    cursor: grab;
+  }
+  #canvas-wrapper.dragging { cursor: grabbing; }
+
+  #canvas {
+    position: absolute;
+    width: 4500px;
+    height: 3500px;
+    top: 0; left: 0;
+    will-change: transform;
+    transition: transform 0.05s linear;
+  }
+
+  /* Background grid pattern */
+  #canvas::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+    background-size: 80px 80px;
+  }
+
+  /* VINYL ITEM */
+  .vinyl-item {
+    position: absolute;
+    width: 280px;
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), filter 0.3s;
+    transform-origin: center center;
+  }
+  .vinyl-item:hover { z-index: 50 !important; filter: drop-shadow(0 0 30px rgba(255,45,120,0.4)); }
+  .vinyl-item:hover .vinyl-record { transform: translateX(60px) rotate(12deg); }
+  .vinyl-item:hover .album-cover { transform: translateX(-8px) translateY(-4px); box-shadow: 20px 20px 60px rgba(0,0,0,0.8); }
+
+  .album-cover {
+    width: 240px;
+    height: 240px;
+    position: relative;
+    z-index: 2;
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    box-shadow: 10px 10px 40px rgba(0,0,0,0.6);
+  }
+
+  .cover-inner {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .cover-title {
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 18px;
+    line-height: 1.2;
+    color: #000;
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-creator {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.6);
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-genre {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: rgba(0,0,0,0.5);
+    position: relative;
+    z-index: 1;
+  }
+
+  .cover-decoration {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* Vinyl record behind */
+  .vinyl-record {
+    position: absolute;
+    width: 230px;
+    height: 230px;
+    border-radius: 50%;
+    top: 5px;
+    left: 160px;
+    z-index: 1;
+    transition: all 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    overflow: hidden;
+  }
+
+  .vinyl-grooves {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: relative;
+  }
+
+  .groove-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 0.5px solid rgba(255,255,255,0.07);
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .vinyl-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 35%;
+    height: 35%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .vinyl-hole {
+    width: 20%;
+    height: 20%;
+    border-radius: 50%;
+    background: #000;
+    box-shadow: inset 0 0 8px rgba(0,0,0,0.9);
+  }
+
+  .vinyl-shine {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: linear-gradient(135deg, transparent 30%, rgba(255,255,255,0.08) 50%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* MODAL OVERLAY */
+  #modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+  }
+  #modal-overlay.open { display: flex; }
+
+  #modal {
+    position: relative;
+    width: 90vw;
+    max-width: 900px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #0c0c10;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 0;
+    animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.92) translateY(20px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 20px; right: 20px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.15);
+    color: var(--text-dim);
+    cursor: pointer;
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    transition: all 0.2s;
+    z-index: 10;
+  }
+  .modal-close:hover { border-color: var(--accent1); color: var(--accent1); }
+
+  .modal-hero {
+    display: flex;
+    gap: 0;
+    min-height: 320px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .modal-vinyl-section {
+    width: 300px;
+    min-width: 300px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    position: relative;
+  }
+
+  .modal-vinyl {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    position: relative;
+    animation: spin 12s linear infinite;
+  }
+
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+  .modal-vinyl-grooves {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    position: relative;
+  }
+
+  .modal-vinyl-label {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    width: 38%;
+    height: 38%;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .modal-vinyl-hole {
+    width: 18%;
+    height: 18%;
+    border-radius: 50%;
+    background: #0c0c10;
+  }
+
+  .modal-info {
+    flex: 1;
+    padding: 40px 40px 40px 20px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+  }
+
+  .modal-tag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+  }
+
+  .modal-title {
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 42px;
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  .modal-creator {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+  }
+
+  .modal-genre-pill {
+    display: inline-block;
+    padding: 4px 12px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    border: 1px solid rgba(255,255,255,0.15);
+    margin-bottom: 20px;
+  }
+
+  .modal-note {
+    font-size: 14px;
+    line-height: 1.7;
+    color: rgba(240,236,228,0.75);
+    max-width: 400px;
+  }
+
+  /* ANALYSIS SECTION */
+  .analysis-section {
+    padding: 40px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+
+  .section-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .section-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.06);
+  }
+
+  .personality-card {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+
+  .personality-trait {
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .trait-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .trait-value {
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 20px;
+    margin-bottom: 6px;
+  }
+
+  .trait-bar {
+    height: 2px;
+    background: rgba(255,255,255,0.08);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .trait-fill {
+    position: absolute;
+    top: 0; left: 0; height: 100%;
+    transition: width 1s ease;
+  }
+
+  .trait-glow {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    opacity: 0.05;
+    pointer-events: none;
+  }
+
+  /* TRACKLIST */
+  .tracklist {
+    margin-bottom: 24px;
+  }
+
+  .track-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 14px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.2s;
+  }
+
+  .track-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    width: 24px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .track-info { flex: 1; }
+
+  .track-title {
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 2px;
+  }
+
+  .track-artist {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  .track-duration {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+
+  /* ANALYSIS TEXT */
+  .analysis-text {
+    font-size: 14px;
+    line-height: 1.8;
+    color: rgba(240,236,228,0.75);
+    padding: 24px;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    background: rgba(255,255,255,0.015);
+  }
+
+  .analysis-loading {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+  }
+
+  .dot-pulse {
+    display: flex;
+    gap: 4px;
+  }
+
+  .dot-pulse span {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--accent1);
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  .dot-pulse span:nth-child(2) { animation-delay: 0.2s; }
+  .dot-pulse span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1); }
+  }
+
+  /* ADD MODAL */
+  #add-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 300;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+  }
+  #add-modal.open { display: flex; }
+
+  #add-modal-inner {
+    width: 90vw;
+    max-width: 640px;
+    max-height: 90vh;
+    overflow-y: auto;
+    background: #0c0c10;
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 48px;
+    animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+
+  .form-heading {
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 36px;
+    margin-bottom: 6px;
+  }
+
+  .form-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 36px;
+  }
+
+  /* ABOUT MODAL */
+  #about-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 250;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+  }
+  #about-modal.open { display: flex; }
+
+  #about-modal-inner {
+    width: 90vw;
+    max-width: 720px;
+    max-height: 80vh;
+    padding: 40px 40px 32px;
+    background: #050508;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.8);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+    animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+
+  .about-heading {
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 30px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .about-tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .about-body {
+    font-size: 14px;
+    line-height: 1.8;
+    color: rgba(240,236,228,0.8);
+    max-width: 640px;
+  }
+
+  .about-body p + p {
+    margin-top: 14px;
+  }
+
+  .about-close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.18);
+    color: var(--text-dim);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+
+  .about-close:hover {
+    border-color: var(--accent1);
+    color: var(--accent1);
+  }
+
+  .about-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.16);
+    color: var(--text-dim);
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .about-link:hover {
+    border-color: var(--accent1);
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
+  }
+
+  .form-group { margin-bottom: 20px; }
+
+  .form-label {
+    display: block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  .form-input, .form-textarea {
+    width: 100%;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text);
+    padding: 12px 16px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    resize: none;
+  }
+
+  .form-input:focus, .form-textarea:focus {
+    border-color: rgba(255,255,255,0.25);
+  }
+
+  .color-picker {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .color-dot {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: all 0.2s;
+  }
+  .color-dot.active { border-color: var(--text); transform: scale(1.15); }
+
+  /* TRACKS FORM */
+  .track-inputs { margin-bottom: 8px; }
+
+  .track-input-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+    align-items: center;
+  }
+
+  .track-input-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    color: var(--text-dim);
+    width: 20px;
+    flex-shrink: 0;
+  }
+
+  .track-input-title {
+    flex: 2;
+  }
+  .track-input-artist {
+    flex: 1.5;
+  }
+  .track-input-duration {
+    width: 60px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+  }
+
+  .track-remove {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 4px;
+    transition: color 0.2s;
+  }
+  .track-remove:hover { color: var(--accent1); }
+
+  .add-track-btn {
+    background: none;
+    border: 1px dashed rgba(255,255,255,0.12);
+    color: var(--text-dim);
+    padding: 10px 16px;
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    width: 100%;
+    transition: all 0.2s;
+    margin-top: 4px;
+  }
+  .add-track-btn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+
+  .submit-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent1);
+    color: #000;
+    border: none;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: all 0.2s;
+    clip-path: polygon(0 0, calc(100% - 10px) 0, 100% 10px, 100% 100%, 10px 100%, 0 calc(100% - 10px));
+  }
+  .submit-btn:hover { background: var(--text); transform: translateY(-1px); }
+
+  .cancel-btn {
+    width: 100%;
+    padding: 12px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    margin-top: 10px;
+    transition: all 0.2s;
+  }
+  .cancel-btn:hover { border-color: rgba(255,255,255,0.25); color: var(--text); }
+
+  /* SCROLL HINT */
+  #scroll-hint {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    z-index: 100;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    text-align: right;
+    gap: 8px;
+    animation: fadeHint 4s ease-in-out forwards;
+    pointer-events: none;
+  }
+
+  .hint-arrows {
+    display: flex; gap: 4px;
+  }
+
+  .hint-arrows span {
+    width: 20px; height: 20px;
+    border: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 10px;
+  }
+
+  @keyframes fadeHint {
+    0% { opacity: 0; }
+    10% { opacity: 1; }
+    80% { opacity: 1; }
+    100% { opacity: 0; }
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header id="header">
+  <div class="logo">YOU·SIDE</div>
+  <div class="header-right">
+    <button id="about-btn" class="about-link">About</button>
+    <div class="nav-hint">↔ drag to explore</div>
+    <button id="add-btn">+ Create Your Album</button>
+  </div>
+</header>
+
+<!-- CANVAS -->
+<div id="canvas-wrapper">
+  <div id="canvas"></div>
+</div>
+
+<!-- VIEW ALBUM MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <button class="modal-close" id="modal-close-btn">✕</button>
+    <div class="modal-hero" id="modal-hero">
+      <div class="modal-vinyl-section" id="modal-vinyl-section">
+        <div class="modal-vinyl" id="modal-vinyl">
+          <div class="modal-vinyl-grooves" id="modal-vinyl-grooves"></div>
+          <div class="modal-vinyl-label" id="modal-vinyl-label">
+            <div class="modal-vinyl-hole"></div>
+          </div>
+          <div class="vinyl-shine"></div>
+        </div>
+      </div>
+      <div class="modal-info">
+        <div class="modal-tag">SONIC IDENTITY — PERSONAL ARCHIVE</div>
+        <div class="modal-title" id="modal-title"></div>
+        <div class="modal-creator" id="modal-creator"></div>
+        <div class="modal-genre-pill" id="modal-genre"></div>
+        <div class="modal-note" id="modal-note"></div>
+      </div>
+    </div>
+
+    <div class="analysis-section">
+      <div class="section-label">Music Personality Analysis</div>
+      <div class="personality-card" id="personality-card"></div>
+
+      <div class="section-label">Tracklist</div>
+      <div class="tracklist" id="modal-tracklist"></div>
+
+      <div class="section-label">AI Reading — What Your Music Says About You</div>
+      <div class="analysis-text" id="analysis-text">
+        <div class="analysis-loading">
+          <div class="dot-pulse"><span></span><span></span><span></span></div>
+          <span>Analyzing your sonic identity...</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ALBUM MODAL -->
+<div id="add-modal">
+  <div id="add-modal-inner">
+    <button class="modal-close" id="add-modal-close" style="position:absolute;top:20px;right:20px;">✕</button>
+    <div class="form-heading">Shape Your<br><em>Sound</em></div>
+    <div class="form-sub">Input your songs — get your music personality</div>
+
+    <div class="form-group">
+      <label class="form-label">Your Name *</label>
+      <input class="form-input" id="f-name" placeholder="e.g. Alex Chen" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Album Title *</label>
+      <input class="form-input" id="f-title" placeholder="e.g. Midnight Radio" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">What does this collection mean to you?</label>
+      <textarea class="form-textarea" id="f-note" rows="3" placeholder="Late-night drives, coffee mornings, heartbreak therapy..."></textarea>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Genre (optional)</label>
+      <input class="form-input" id="f-genre" placeholder="e.g. Electronic / Ambient" />
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Label Color</label>
+      <div class="color-picker" id="color-picker"></div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Songs You're Listening To *</label>
+      <div class="track-inputs" id="track-inputs"></div>
+      <button class="add-track-btn" id="add-track-btn">+ Add Song</button>
+    </div>
+
+    <button class="submit-btn" id="submit-album-btn">Generate My Album →</button>
+    <button class="cancel-btn" id="cancel-add-btn">Cancel</button>
+  </div>
+</div>
+
+<!-- SCROLL HINT -->
+<div id="scroll-hint">
+  <div class="hint-arrows">
+    <span>↑</span><span>↓</span><span>←</span><span>→</span>
+  </div>
+  <span>Drag to explore all albums</span>
+</div>
+
+<!-- ABOUT MODAL -->
+<div id="about-modal">
+  <div id="about-modal-inner">
+    <button class="about-close" id="about-modal-close">✕</button>
+    <div class="about-heading">About YOU·SIDE</div>
+    <div class="about-tagline">Music says everything words can't</div>
+    <div class="about-body">
+      <p>Music says everything words can't. The songs you keep on repeat, the albums that defined your summers, the tracks you play at 2am — they're not just sounds, they're a mirror.</p>
+      <p>Our platform takes the music you love and transforms it into something deeply personal: a curated album crafted just for you, alongside a personality analysis that uncovers what your listening habits reveal about who you are.</p>
+      <p>Whether you're drawn to melancholic indie ballads or high-energy anthems, every song you input becomes a data point in a bigger story — your story. Discover the soundtrack of your soul, and maybe learn a little something about yourself along the way.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+
+const ACCENT_COLORS = [
+  '#ff2d78', '#7b2fff', '#00e5ff', '#ffcc00',
+  '#00ff8c', '#ff6b00', '#ff3366', '#00ccff'
+];
+
+const VINYL_COLORS = [
+  '#1a0a2e', '#0a1a2e', '#1a2e0a', '#2e1a0a',
+  '#1a1a1a', '#0d1520', '#200d15', '#150d20'
+];
+
+const COVER_PATTERNS = [
+  (color) => `radial-gradient(ellipse at 20% 80%, ${color}dd 0%, ${adjustColor(color, 0.5)} 60%, ${color}88 100%)`,
+  (color) => `linear-gradient(135deg, ${color} 0%, ${adjustColor(color, 0.4)} 50%, ${color}aa 100%)`,
+  (color) => `radial-gradient(circle at 70% 30%, ${adjustColor(color, 1.2)} 0%, ${color} 50%, #000 100%)`,
+  (color) => `conic-gradient(from 45deg, ${color}, ${adjustColor(color, 0.6)}, ${color}88, ${adjustColor(color, 1.3)}, ${color})`,
+  (color) => `linear-gradient(45deg, #000 0%, ${color} 40%, ${adjustColor(color, 0.8)} 70%, #000 100%)`,
+  (color) => `radial-gradient(ellipse at 50% 50%, ${color} 0%, #000 80%)`,
+];
+
+function adjustColor(hex, factor) {
+  const r = parseInt(hex.slice(1,3),16);
+  const g = parseInt(hex.slice(3,5),16);
+  const b = parseInt(hex.slice(5,7),16);
+  const rr = Math.min(255,Math.floor(r*factor)).toString(16).padStart(2,'0');
+  const gg = Math.min(255,Math.floor(g*factor)).toString(16).padStart(2,'0');
+  const bb = Math.min(255,Math.floor(b*factor)).toString(16).padStart(2,'0');
+  return `#${rr}${gg}${bb}`;
+}
+
+// PERSONALITY ANALYSIS ENGINE
+const ARCHETYPES = [
+  { name: 'The Midnight Wanderer', description: 'You live in the liminal hours, finding beauty where others find emptiness. Music is your map through the unmapped.' },
+  { name: 'The Nostalgic Romantic', description: 'You carry the past gently, like a love letter you\'ve memorized. Every song is a room you\'ve lived in before.' },
+  { name: 'The Kinetic Dreamer', description: 'Movement is your medium. You process emotion through rhythm — your inner world spins faster than others can see.' },
+  { name: 'The Quiet Observer', description: 'You notice everything. Music reveals what words can\'t hold: the texture of light, the weight of silence between sentences.' },
+  { name: 'The Cathartic Soul', description: 'You use music as emotional alchemy, transmuting pain into something bearable, even beautiful. You feel everything fully.' },
+  { name: 'The Ecstatic Present', description: 'You chase peak moments — that drop, that chorus, that beat that makes time collapse. You know how to disappear into now.' },
+  { name: 'The Introspective Pilgrim', description: 'Your playlist is a journal. Each song marks a chapter, a person, a version of yourself you\'re still becoming.' },
+  { name: 'The Sonic Architect', description: 'You build worlds with sound. Atmosphere matters more than melody to you — you need music that creates space around you.' },
+];
+
+const TRAITS = [
+  { key: 'Emotional Depth', values: ['Surface Dweller','Feeling Explorer','Deep Diver','Oceanic'], icon: '◉' },
+  { key: 'Energy Profile', values: ['Meditative','Wavelength','Kinetic','Euphoric'], icon: '◈' },
+  { key: 'Sonic Texture', values: ['Crystalline','Layered','Dense','Maximal'], icon: '◆' },
+  { key: 'Nostalgia Index', values: ['Present Focus','Nostalgic Glow','Time Traveler','Living Archive'], icon: '◇' },
+];
+
+function generatePersonality(tracks) {
+  const seed = tracks.reduce((acc, t) => acc + t.title.charCodeAt(0) + t.artist.charCodeAt(0), 0);
+  const archetype = ARCHETYPES[seed % ARCHETYPES.length];
+  const traitValues = TRAITS.map((trait, i) => ({
+    ...trait,
+    level: ((seed + i * 37) % 4),
+    percent: 25 + ((seed + i * 13) % 75)
+  }));
+  
+  const moodWords = ['melancholic', 'euphoric', 'introspective', 'kinetic', 'nostalgic', 'transcendent', 'raw', 'luminous'];
+  const mood = moodWords[seed % moodWords.length];
+  const mood2 = moodWords[(seed + 3) % moodWords.length];
+
+  const artistNames = tracks.map(t => t.artist).filter(Boolean);
+  const artistStr = artistNames.length > 0 
+    ? `Drawing from ${artistNames.slice(0,3).join(', ')}${artistNames.length > 3 ? ' and more' : ''}, ` 
+    : '';
+
+  const analysis = `${archetype.description}
+
+${artistStr}your selections paint a portrait of someone who gravitates toward the ${mood} and the ${mood2}. There's a coherence here that most listeners don't achieve — a willingness to stay with discomfort long enough to find its beauty.
+
+Your musical instinct suggests high emotional intelligence and a preference for depth over novelty. You likely process experiences through sound — using music as both mirror and escape hatch. The through-line in your selections isn't genre or tempo; it's texture, mood, and a quiet refusal to stay on the surface.
+
+You are the kind of listener artists make music for.`;
+
+  return { archetype, traitValues, analysis };
+}
+
+// MOCK ALBUMS DATA
+const albums = [
+  {
+    id: '1', title: 'Midnight Radio', creator: 'Alex Chen',
+    albumNote: 'Late-night drives through empty highways. The feeling of being alone but not lonely — when the world is asleep and the radio is your only companion.',
+    vinylColor: '#0a0a1a', labelColor: '#ff2d78', genre: 'Electronic / Ambient',
+    date: 'Feb 2026', patternIdx: 0,
+    tracks: [
+      { title: 'Neon Glow', artist: 'Tycho', duration: '4:23' },
+      { title: 'Late Night Tales', artist: 'Four Tet', duration: '5:17' },
+      { title: 'Aqueous', artist: 'Jon Hopkins', duration: '6:45' },
+      { title: 'Radio Silence', artist: 'Kiasmos', duration: '4:56' },
+    ]
+  },
+  {
+    id: '2', title: 'Sunday Mornings', creator: 'Maya Rodriguez',
+    albumNote: 'Coffee. Sunlight. Quiet. These are the songs that make me feel like I have all the time in the world. This is what peace sounds like to me.',
+    vinylColor: '#0a1a1a', labelColor: '#00e5ff', genre: 'Jazz / Soul',
+    date: 'Feb 2026', patternIdx: 1,
+    tracks: [
+      { title: 'Sunday Morning', artist: 'Maroon 5', duration: '4:04' },
+      { title: 'Harvest Moon', artist: 'Neil Young', duration: '5:03' },
+      { title: 'Easy Like Sunday Morning', artist: 'Lionel Richie', duration: '4:12' },
+      { title: 'Sunday Candy', artist: 'Donnie Trumpet', duration: '4:20' },
+    ]
+  },
+  {
+    id: '3', title: 'Heartbreak Hotel', creator: 'Jordan Kim',
+    albumNote: 'For everyone who ever needed to cry in the car. This isn\'t just sad — it\'s cathartic. It\'s the soundtrack to letting go.',
+    vinylColor: '#1a0a1a', labelColor: '#7b2fff', genre: 'Indie / Alternative',
+    date: 'Jan 2026', patternIdx: 2,
+    tracks: [
+      { title: 'Someone Like You', artist: 'Adele', duration: '4:45' },
+      { title: 'The Night We Met', artist: 'Lord Huron', duration: '3:28' },
+      { title: 'Skinny Love', artist: 'Bon Iver', duration: '3:58' },
+      { title: 'Liability', artist: 'Lorde', duration: '2:52' },
+    ]
+  },
+  {
+    id: '4', title: 'Dance Floor Therapy', creator: 'Sam Martinez',
+    albumNote: 'When words aren\'t enough, we dance. This is my collection of pure, unapologetic joy. Every track has made me forget my problems for at least four minutes.',
+    vinylColor: '#1a1a0a', labelColor: '#ffcc00', genre: 'House / Dance',
+    date: 'Jan 2026', patternIdx: 3,
+    tracks: [
+      { title: 'One More Time', artist: 'Daft Punk', duration: '5:20' },
+      { title: 'Finally', artist: 'Kings Of Tomorrow', duration: '9:12' },
+      { title: 'Losing It', artist: 'Fisher', duration: '7:08' },
+      { title: 'Music Sounds Better', artist: 'Stardust', duration: '6:52' },
+    ]
+  },
+  {
+    id: '5', title: 'Inherited Dreams', creator: 'Priya Shah',
+    albumNote: 'Between two worlds, two languages, two identities. These songs hold space for the complexity of belonging nowhere and everywhere at once.',
+    vinylColor: '#0a150a', labelColor: '#00ff8c', genre: 'World / Electronic',
+    date: 'Jan 2026', patternIdx: 4,
+    tracks: [
+      { title: 'Breathe (2 AM)', artist: 'Anna Nalick', duration: '3:41' },
+      { title: 'Immigrant Song', artist: 'Led Zeppelin', duration: '2:23' },
+      { title: 'Where Is My Mind?', artist: 'Pixies', duration: '3:53' },
+      { title: 'Strange', artist: 'Celeste', duration: '3:10' },
+    ]
+  },
+  {
+    id: '6', title: 'Golden Hour', creator: 'Theo Nakamura',
+    albumNote: 'That specific light at 6pm in summer. The warmth before dark. These songs are that exact feeling, bottled.',
+    vinylColor: '#1a0f00', labelColor: '#ff6b00', genre: 'Indie Pop / Folk',
+    date: 'Dec 2025', patternIdx: 5,
+    tracks: [
+      { title: 'Golden Hour', artist: 'JVKE', duration: '3:25' },
+      { title: 'Bloom', artist: 'Gracie Abrams', duration: '3:18' },
+      { title: 'Ribs', artist: 'Lorde', duration: '3:49' },
+      { title: 'Cape Cod Kwassa Kwassa', artist: 'Vampire Weekend', duration: '3:35' },
+    ]
+  },
+  {
+    id: '7', title: 'Drifted Entities', creator: 'Felix Morse',
+    albumNote: 'Textures, not songs. Atmospheres, not melodies. This is music as architecture — you walk through it, not with it.',
+    vinylColor: '#050510', labelColor: '#00ccff', genre: 'Ambient / Experimental',
+    date: 'Dec 2025', patternIdx: 0,
+    tracks: [
+      { title: 'An Ending (Ascent)', artist: 'Brian Eno', duration: '4:18' },
+      { title: 'Gemini', artist: 'Floating Points', duration: '11:08' },
+      { title: 'Dissolution', artist: 'Rival Consoles', duration: '7:22' },
+      { title: 'Motion', artist: 'Nicolas Jaar', duration: '8:05' },
+    ]
+  },
+  {
+    id: '8', title: 'Rise', creator: 'Amara Osei',
+    albumNote: 'Strength is not the absence of fear. It\'s showing up anyway. Every song here made me move when I didn\'t want to move.',
+    vinylColor: '#15050a', labelColor: '#ff3366', genre: 'R&B / Hip-Hop',
+    date: 'Nov 2025', patternIdx: 1,
+    tracks: [
+      { title: 'Alright', artist: 'Kendrick Lamar', duration: '3:39' },
+      { title: 'Glory', artist: 'Common', duration: '4:18' },
+      { title: 'Higher', artist: 'Beyoncé', duration: '4:22' },
+      { title: 'God\'s Plan', artist: 'Drake', duration: '3:19' },
+    ]
+  },
+];
+
+const DEFAULT_ALBUM_IDS = new Set(albums.map(a => String(a.id)));
+const USER_ALBUMS_STORAGE_KEY = 'you-side:user-albums:v1';
+
+function loadUserAlbums() {
+  try {
+    const raw = localStorage.getItem(USER_ALBUMS_STORAGE_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return;
+    parsed.forEach(a => {
+      if (!a || !a.id || !a.title) return;
+      albums.push(a);
+    });
+  } catch (e) {
+    console.error('Failed to load user albums', e);
+  }
+}
+
+function saveUserAlbums() {
+  try {
+    const userAlbums = albums.filter(a => !DEFAULT_ALBUM_IDS.has(String(a.id)));
+    localStorage.setItem(USER_ALBUMS_STORAGE_KEY, JSON.stringify(userAlbums));
+  } catch (e) {
+    console.error('Failed to save user albums', e);
+  }
+}
+
+loadUserAlbums();
+
+// ============================================================
+// CANVAS LOGIC
+// ============================================================
+
+const canvasWrapper = document.getElementById('canvas-wrapper');
+const canvas = document.getElementById('canvas');
+
+let camX = -200, camY = -80;
+let dragging = false, lastMouseX = 0, lastMouseY = 0;
+let velX = 0, velY = 0;
+
+function updateCanvas() {
+  canvas.style.transform = `translate(${camX}px, ${camY}px)`;
+}
+
+canvasWrapper.addEventListener('mousedown', (e) => {
+  if (e.target === canvasWrapper || e.target === canvas || e.target.classList.contains('vinyl-item') || e.target.closest('.vinyl-item')) {
+    dragging = true;
+    lastMouseX = e.clientX;
+    lastMouseY = e.clientY;
+    canvasWrapper.classList.add('dragging');
+    velX = 0; velY = 0;
+  }
+});
+
+window.addEventListener('mousemove', (e) => {
+  if (!dragging) return;
+  const dx = e.clientX - lastMouseX;
+  const dy = e.clientY - lastMouseY;
+  velX = dx; velY = dy;
+  camX += dx; camY += dy;
+  lastMouseX = e.clientX;
+  lastMouseY = e.clientY;
+  updateCanvas();
+});
+
+window.addEventListener('mouseup', (e) => {
+  if (!dragging) return;
+  dragging = false;
+  canvasWrapper.classList.remove('dragging');
+  // Momentum
+  let momentum = setInterval(() => {
+    velX *= 0.92; velY *= 0.92;
+    camX += velX; camY += velY;
+    updateCanvas();
+    if (Math.abs(velX) < 0.5 && Math.abs(velY) < 0.5) clearInterval(momentum);
+  }, 16);
+});
+
+// Touch support
+canvasWrapper.addEventListener('touchstart', (e) => {
+  dragging = true;
+  lastMouseX = e.touches[0].clientX;
+  lastMouseY = e.touches[0].clientY;
+  velX = 0; velY = 0;
+}, { passive: true });
+
+canvasWrapper.addEventListener('touchmove', (e) => {
+  if (!dragging) return;
+  const dx = e.touches[0].clientX - lastMouseX;
+  const dy = e.touches[0].clientY - lastMouseY;
+  velX = dx; velY = dy;
+  camX += dx; camY += dy;
+  lastMouseX = e.touches[0].clientX;
+  lastMouseY = e.touches[0].clientY;
+  updateCanvas();
+}, { passive: true });
+
+canvasWrapper.addEventListener('touchend', () => {
+  dragging = false;
+});
+
+updateCanvas();
+
+// ============================================================
+// RENDER ALBUMS
+// ============================================================
+
+function createVinylGroovesSVG(color, bgColor) {
+  const grooves = Array.from({length: 22}, (_, i) => {
+    const r = 48 - i * 1.8;
+    return `<circle cx="50" cy="50" r="${r}" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="0.4"/>`;
+  }).join('');
+  return `data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='50' fill='${encodeURIComponent(bgColor)}'/>${encodeURIComponent(grooves)}</svg>`;
+}
+
+function makeVinylHTML(album) {
+  const pattern = COVER_PATTERNS[album.patternIdx % COVER_PATTERNS.length](album.labelColor);
+  const groovesSrc = createVinylGroovesSVG('#ffffff', album.vinylColor);
+
+  return `
+    <div class="vinyl-item" data-id="${album.id}" style="left:${album._pos.x}px;top:${album._pos.y}px;transform:rotate(${album._rot}deg);z-index:${album._z};">
+      <div style="display:flex;align-items:center;position:relative;">
+        <div class="album-cover" style="background:${pattern};">
+          <div class="cover-inner">
+            <div>
+              <div class="cover-title">${album.title}</div>
+              <div class="cover-creator" style="margin-top:4px;">${album.creator}</div>
+            </div>
+            <div class="cover-genre">${album.genre || ''}</div>
+          </div>
+        </div>
+        <div class="vinyl-record" style="background:radial-gradient(circle at 40% 40%, #2a2a3a, ${album.vinylColor});">
+          <div class="vinyl-grooves">
+            <img src="${groovesSrc}" alt="" style="width:100%;height:100%;border-radius:50%;display:block;" />
+          </div>
+          <div class="vinyl-label" style="background:${album.labelColor};">
+            <div class="vinyl-hole"></div>
+          </div>
+          <div class="vinyl-shine"></div>
+        </div>
+      </div>
+    </div>`;
+}
+
+// Position albums in a scattered grid
+const positions = [
+  {x:80, y:120}, {x:550, y:60}, {x:1050, y:180}, {x:1520, y:80}, {x:2050, y:150},
+  {x:200, y:600}, {x:750, y:520}, {x:1300, y:650}, {x:1800, y:550}, {x:2300, y:620},
+  {x:60, y:1100}, {x:600, y:1050}, {x:1150, y:1150}, {x:1650, y:1080},
+];
+
+albums.forEach((album, i) => {
+  if (!album._pos) {
+    const p = positions[i] || { x: 200 + (i%4)*500, y: 200 + Math.floor(i/4)*500 };
+    album._pos = { x: p.x, y: p.y };
+  }
+  if (album._rot == null) {
+    album._rot = (Math.random() - 0.5) * 14;
+  }
+  if (album._z == null) {
+    album._z = Math.floor(Math.random() * 10) + 1;
+  }
+});
+
+canvas.innerHTML = albums.map(makeVinylHTML).join('');
+
+// ============================================================
+// CLICK VINYL → OPEN MODAL
+// ============================================================
+
+let clickStartX, clickStartY;
+
+canvas.addEventListener('mousedown', (e) => {
+  clickStartX = e.clientX;
+  clickStartY = e.clientY;
+});
+
+canvas.addEventListener('mouseup', (e) => {
+  const dist = Math.hypot(e.clientX - clickStartX, e.clientY - clickStartY);
+  if (dist > 6) return; // was a drag
+  const item = e.target.closest('.vinyl-item');
+  if (!item) return;
+  const albumId = item.dataset.id;
+  openAlbumModal(albumId);
+});
+
+function openAlbumModal(id) {
+  const album = albums.find(a => a.id === id);
+  if (!album) return;
+
+  const pattern = COVER_PATTERNS[album.patternIdx % COVER_PATTERNS.length](album.labelColor);
+  const heroEl = document.getElementById('modal-hero');
+  heroEl.style.background = `linear-gradient(135deg, ${album.labelColor}18 0%, transparent 60%)`;
+  heroEl.style.borderBottom = `1px solid ${album.labelColor}30`;
+
+  // Vinyl
+  const vinylEl = document.getElementById('modal-vinyl');
+  const groovesEl = document.getElementById('modal-vinyl-grooves');
+  const labelEl = document.getElementById('modal-vinyl-label');
+  vinylEl.style.background = `radial-gradient(circle at 40% 40%, #2a2a3a, ${album.vinylColor})`;
+  const modalGroovesSrc = createVinylGroovesSVG('#ffffff', album.vinylColor);
+  groovesEl.innerHTML = `<img src="${modalGroovesSrc}" alt="" style="width:100%;height:100%;border-radius:50%;display:block;" />`;
+  labelEl.style.background = album.labelColor;
+  document.getElementById('modal-vinyl-section').style.background = `radial-gradient(circle at 50% 50%, ${album.labelColor}15 0%, transparent 70%)`;
+
+  // Info
+  document.getElementById('modal-title').textContent = album.title;
+  document.getElementById('modal-title').style.background = `linear-gradient(90deg, ${album.text || '#f0ece4'}, ${album.labelColor})`;
+  document.getElementById('modal-title').style.webkitBackgroundClip = 'text';
+  document.getElementById('modal-title').style.webkitTextFillColor = 'transparent';
+  document.getElementById('modal-creator').textContent = `By ${album.creator} · ${album.date || ''}`;
+  document.getElementById('modal-genre').textContent = album.genre || 'Personal Mix';
+  document.getElementById('modal-genre').style.borderColor = `${album.labelColor}50`;
+  document.getElementById('modal-genre').style.color = album.labelColor;
+  document.getElementById('modal-note').textContent = album.albumNote;
+
+  // Tracklist
+  const tracklistEl = document.getElementById('modal-tracklist');
+  tracklistEl.innerHTML = album.tracks.map((t, i) => `
+    <div class="track-row">
+      <div class="track-num">${String(i+1).padStart(2,'0')}</div>
+      <div class="track-info">
+        <div class="track-title">${t.title}</div>
+        <div class="track-artist">${t.artist}</div>
+      </div>
+      <div class="track-duration">${t.duration}</div>
+    </div>`).join('');
+
+  // Personality
+  const { archetype, traitValues, analysis } = generatePersonality(album.tracks);
+
+  const cardEl = document.getElementById('personality-card');
+  cardEl.innerHTML = traitValues.map(t => `
+    <div class="personality-trait" style="border-color:${album.labelColor}20;">
+      <div class="trait-glow" style="background:${album.labelColor};"></div>
+      <div class="trait-name">${t.icon} ${t.key}</div>
+      <div class="trait-value" style="color:${album.labelColor};">${t.values[t.level]}</div>
+      <div class="trait-bar">
+        <div class="trait-fill" style="width:${t.percent}%;background:${album.labelColor};"></div>
+      </div>
+    </div>`).join('');
+
+  // PERSONALITY TYPE BADGE
+  const existingBadge = document.getElementById('archetype-badge');
+  if (existingBadge) existingBadge.remove();
+  const badge = document.createElement('div');
+  badge.id = 'archetype-badge';
+  badge.style.cssText = `
+    padding: 16px 24px;
+    margin-bottom: 20px;
+    border: 1px solid ${album.labelColor}40;
+    background: ${album.labelColor}10;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  `;
+  badge.innerHTML = `
+    <div style="font-size:24px;filter:drop-shadow(0 0 8px ${album.labelColor});">◈</div>
+    <div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:0.2em;text-transform:uppercase;color:${album.labelColor};margin-bottom:4px;">Your Archetype</div>
+      <div style="font-family:'DM Serif Display',serif;font-size:22px;color:${album.labelColor};">${archetype.name}</div>
+    </div>`;
+  cardEl.parentNode.insertBefore(badge, cardEl);
+
+  // Analysis text
+  const analysisEl = document.getElementById('analysis-text');
+  analysisEl.innerHTML = '<div class="analysis-loading"><div class="dot-pulse"><span></span><span></span><span></span></div><span>Analyzing your sonic identity...</span></div>';
+  
+  setTimeout(() => {
+    analysisEl.style.borderColor = `${album.labelColor}30`;
+    analysisEl.innerHTML = analysis.split('\n\n').map(p => `<p style="margin-bottom:16px;">${p}</p>`).join('');
+  }, 1400);
+
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+document.getElementById('modal-close-btn').addEventListener('click', () => {
+  document.getElementById('modal-overlay').classList.remove('open');
+});
+
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+  }
+});
+
+// ============================================================
+// ADD ALBUM FORM
+// ============================================================
+
+let selectedColor = '#ff2d78';
+let trackCount = 1;
+
+// Render color picker
+const colorPicker = document.getElementById('color-picker');
+ACCENT_COLORS.forEach(c => {
+  const dot = document.createElement('div');
+  dot.className = `color-dot${c === selectedColor ? ' active' : ''}`;
+  dot.style.background = c;
+  dot.addEventListener('click', () => {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('active'));
+    dot.classList.add('active');
+    selectedColor = c;
+  });
+  colorPicker.appendChild(dot);
+});
+
+// Render initial track input
+function addTrackInput() {
+  trackCount++;
+  const row = document.createElement('div');
+  row.className = 'track-input-row';
+  row.innerHTML = `
+    <div class="track-input-num">${String(trackCount).padStart(2,'0')}</div>
+    <input class="form-input track-input-title" placeholder="Song title" style="flex:2;margin:0 4px;" />
+    <input class="form-input track-input-artist" placeholder="Artist" style="flex:1.5;margin:0 4px;" />
+    <input class="form-input track-input-duration" placeholder="3:45" style="width:60px;margin:0 4px;font-family:'JetBrains Mono',monospace;" />
+    <button class="track-remove" onclick="this.closest('.track-input-row').remove()">×</button>`;
+  document.getElementById('track-inputs').appendChild(row);
+}
+
+// First row
+const firstRow = document.createElement('div');
+firstRow.className = 'track-input-row';
+firstRow.innerHTML = `
+  <div class="track-input-num">01</div>
+  <input class="form-input track-input-title" placeholder="Song title" style="flex:2;margin:0 4px;" />
+  <input class="form-input track-input-artist" placeholder="Artist" style="flex:1.5;margin:0 4px;" />
+  <input class="form-input track-input-duration" placeholder="3:45" style="width:60px;margin:0 4px;font-family:'JetBrains Mono',monospace;" />`;
+document.getElementById('track-inputs').appendChild(firstRow);
+
+document.getElementById('add-track-btn').addEventListener('click', addTrackInput);
+
+document.getElementById('add-btn').addEventListener('click', () => {
+  document.getElementById('add-modal').classList.add('open');
+});
+document.getElementById('add-modal-close').addEventListener('click', () => {
+  document.getElementById('add-modal').classList.remove('open');
+});
+document.getElementById('cancel-add-btn').addEventListener('click', () => {
+  document.getElementById('add-modal').classList.remove('open');
+});
+document.getElementById('add-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('add-modal')) {
+    document.getElementById('add-modal').classList.remove('open');
+  }
+});
+
+// About modal
+document.getElementById('about-btn').addEventListener('click', () => {
+  document.getElementById('about-modal').classList.add('open');
+});
+document.getElementById('about-modal-close').addEventListener('click', () => {
+  document.getElementById('about-modal').classList.remove('open');
+});
+document.getElementById('about-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('about-modal')) {
+    document.getElementById('about-modal').classList.remove('open');
+  }
+});
+
+document.getElementById('submit-album-btn').addEventListener('click', () => {
+  const name = document.getElementById('f-name').value.trim();
+  const title = document.getElementById('f-title').value.trim();
+  const note = document.getElementById('f-note').value.trim();
+  const genre = document.getElementById('f-genre').value.trim();
+
+  if (!name || !title) { alert('Please fill in your name and album title.'); return; }
+
+  const rows = document.querySelectorAll('.track-input-row');
+  const tracks = Array.from(rows).map(r => ({
+    title: r.querySelector('.track-input-title')?.value.trim() || '',
+    artist: r.querySelector('.track-input-artist')?.value.trim() || '',
+    duration: r.querySelector('.track-input-duration')?.value.trim() || '—',
+  })).filter(t => t.title);
+
+  if (tracks.length === 0) { alert('Add at least one song.'); return; }
+
+  const positions2 = [
+    {x:400, y:1400},{x:900, y:1350},{x:1400, y:1500},{x:1950, y:1420},
+  ];
+  const posIdx = albums.length % positions2.length;
+
+  const newAlbum = {
+    id: Date.now().toString(),
+    title, creator: name,
+    albumNote: note || 'A personal collection.',
+    vinylColor: VINYL_COLORS[Math.floor(Math.random()*VINYL_COLORS.length)],
+    labelColor: selectedColor,
+    genre: genre || 'Personal Mix',
+    date: new Date().toLocaleDateString('en-US', {month:'short', year:'numeric'}),
+    patternIdx: Math.floor(Math.random() * COVER_PATTERNS.length),
+    tracks,
+    _pos: positions2[posIdx] || { x: 400 + Math.random()*1500, y: 1400 + Math.random()*500 },
+    _rot: (Math.random()-0.5)*14,
+    _z: 20,
+  };
+
+  albums.push(newAlbum);
+  canvas.insertAdjacentHTML('beforeend', makeVinylHTML(newAlbum));
+  saveUserAlbums();
+
+  // Fly camera to new album
+  setTimeout(() => {
+    camX = -(newAlbum._pos.x - window.innerWidth/2 + 140);
+    camY = -(newAlbum._pos.y - window.innerHeight/2 + 140);
+    updateCanvas();
+  }, 100);
+
+  document.getElementById('add-modal').classList.remove('open');
+
+  // Auto open the new album
+  setTimeout(() => openAlbumModal(newAlbum.id), 400);
+});
+
+// ESC to close
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    document.getElementById('modal-overlay').classList.remove('open');
+    document.getElementById('add-modal').classList.remove('open');
+    document.getElementById('about-modal').classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>
