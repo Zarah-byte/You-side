@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>YOU-SIDE — Musical Identity</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Serif+Display:ital@0;1&family=JetBrains+Mono:wght@300;400;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Cakra:wght@400;600;700&family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;700&display=swap');
 
   :root {
     --bg: #050507;
@@ -21,7 +21,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; }
 
   body {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Space Grotesk', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg);
     color: var(--text);
     overflow: hidden;
@@ -57,7 +57,7 @@
   }
 
   .logo {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 28px;
     letter-spacing: -0.5px;
     background: linear-gradient(90deg, var(--accent1), var(--accent2), var(--accent3));
@@ -157,7 +157,7 @@
   }
 
   .cover-title {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 18px;
     line-height: 1.2;
     color: #000;
@@ -366,7 +366,7 @@
   }
 
   .modal-title {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 42px;
     line-height: 1.1;
     margin-bottom: 8px;
@@ -447,7 +447,7 @@
   }
 
   .trait-value {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 20px;
     margin-bottom: 6px;
   }
@@ -584,7 +584,7 @@
   }
 
   .form-heading {
-    font-family: 'DM Serif Display', serif;
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
     font-size: 36px;
     margin-bottom: 6px;
   }
@@ -596,6 +596,102 @@
     text-transform: uppercase;
     color: var(--text-dim);
     margin-bottom: 36px;
+  }
+
+  /* ABOUT MODAL */
+  #about-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.95);
+    z-index: 250;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(20px);
+  }
+  #about-modal.open { display: flex; }
+
+  #about-modal-inner {
+    width: 90vw;
+    max-width: 720px;
+    max-height: 80vh;
+    padding: 40px 40px 32px;
+    background: #050508;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 40px 120px rgba(0,0,0,0.8);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+    animation: modalIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+
+  .about-heading {
+    font-family: 'Cakra', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 30px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .about-tagline {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+
+  .about-body {
+    font-size: 14px;
+    line-height: 1.8;
+    color: rgba(240,236,228,0.8);
+    max-width: 640px;
+  }
+
+  .about-body p + p {
+    margin-top: 14px;
+  }
+
+  .about-close {
+    position: absolute;
+    top: 20px;
+    right: 24px;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.18);
+    color: var(--text-dim);
+    cursor: pointer;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    transition: all 0.2s;
+  }
+
+  .about-close:hover {
+    border-color: var(--accent1);
+    color: var(--accent1);
+  }
+
+  .about-link {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    background: none;
+    border: 1px solid rgba(255,255,255,0.16);
+    color: var(--text-dim);
+    padding: 8px 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .about-link:hover {
+    border-color: var(--accent1);
+    color: var(--text);
+    background: rgba(255,255,255,0.04);
   }
 
   .form-group { margin-bottom: 20px; }
@@ -737,8 +833,8 @@
   /* SCROLL HINT */
   #scroll-hint {
     position: fixed;
-    bottom: 30px; left: 50%;
-    transform: translateX(-50%);
+    bottom: 30px;
+    right: 30px;
     z-index: 100;
     font-family: 'JetBrains Mono', monospace;
     font-size: 9px;
@@ -747,7 +843,8 @@
     color: var(--text-dim);
     display: flex;
     flex-direction: column;
-    align-items: center;
+    align-items: flex-end;
+    text-align: right;
     gap: 8px;
     animation: fadeHint 4s ease-in-out forwards;
     pointer-events: none;
@@ -783,6 +880,7 @@
 <header id="header">
   <div class="logo">YOU·SIDE</div>
   <div class="header-right">
+    <button id="about-btn" class="about-link">About</button>
     <div class="nav-hint">↔ drag to explore</div>
     <button id="add-btn">+ Create Your Album</button>
   </div>
@@ -883,6 +981,20 @@
     <span>↑</span><span>↓</span><span>←</span><span>→</span>
   </div>
   <span>Drag to explore all albums</span>
+</div>
+
+<!-- ABOUT MODAL -->
+<div id="about-modal">
+  <div id="about-modal-inner">
+    <button class="about-close" id="about-modal-close">✕</button>
+    <div class="about-heading">About YOU·SIDE</div>
+    <div class="about-tagline">Music says everything words can't</div>
+    <div class="about-body">
+      <p>Music says everything words can't. The songs you keep on repeat, the albums that defined your summers, the tracks you play at 2am — they're not just sounds, they're a mirror.</p>
+      <p>Our platform takes the music you love and transforms it into something deeply personal: a curated album crafted just for you, alongside a personality analysis that uncovers what your listening habits reveal about who you are.</p>
+      <p>Whether you're drawn to melancholic indie ballads or high-energy anthems, every song you input becomes a data point in a bigger story — your story. Discover the soundtrack of your soul, and maybe learn a little something about yourself along the way.</p>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -1155,10 +1267,7 @@ function createVinylGroovesSVG(color, bgColor) {
 
 function makeVinylHTML(album) {
   const pattern = COVER_PATTERNS[album.patternIdx % COVER_PATTERNS.length](album.labelColor);
-  const groovesHTML = Array.from({length: 22}, (_, i) => {
-    const s = 3 + i * 1.9;
-    return `<div class="groove-ring" style="width:${100-s*2}%;height:${100-s*2}%;"></div>`;
-  }).join('');
+  const groovesSrc = createVinylGroovesSVG('#ffffff', album.vinylColor);
 
   return `
     <div class="vinyl-item" data-id="${album.id}" style="left:${album._pos.x}px;top:${album._pos.y}px;transform:rotate(${album._rot}deg);z-index:${album._z};">
@@ -1173,7 +1282,9 @@ function makeVinylHTML(album) {
           </div>
         </div>
         <div class="vinyl-record" style="background:radial-gradient(circle at 40% 40%, #2a2a3a, ${album.vinylColor});">
-          <div class="vinyl-grooves">${groovesHTML}</div>
+          <div class="vinyl-grooves">
+            <img src="${groovesSrc}" alt="" style="width:100%;height:100%;border-radius:50%;display:block;" />
+          </div>
           <div class="vinyl-label" style="background:${album.labelColor};">
             <div class="vinyl-hole"></div>
           </div>
@@ -1233,10 +1344,8 @@ function openAlbumModal(id) {
   const groovesEl = document.getElementById('modal-vinyl-grooves');
   const labelEl = document.getElementById('modal-vinyl-label');
   vinylEl.style.background = `radial-gradient(circle at 40% 40%, #2a2a3a, ${album.vinylColor})`;
-  groovesEl.innerHTML = Array.from({length: 18}, (_, i) => {
-    const s = 3 + i * 2.2;
-    return `<div class="groove-ring" style="width:${100-s*2}%;height:${100-s*2}%;"></div>`;
-  }).join('');
+  const modalGroovesSrc = createVinylGroovesSVG('#ffffff', album.vinylColor);
+  groovesEl.innerHTML = `<img src="${modalGroovesSrc}" alt="" style="width:100%;height:100%;border-radius:50%;display:block;" />`;
   labelEl.style.background = album.labelColor;
   document.getElementById('modal-vinyl-section').style.background = `radial-gradient(circle at 50% 50%, ${album.labelColor}15 0%, transparent 70%)`;
 
@@ -1383,6 +1492,19 @@ document.getElementById('add-modal').addEventListener('click', (e) => {
   }
 });
 
+// About modal
+document.getElementById('about-btn').addEventListener('click', () => {
+  document.getElementById('about-modal').classList.add('open');
+});
+document.getElementById('about-modal-close').addEventListener('click', () => {
+  document.getElementById('about-modal').classList.remove('open');
+});
+document.getElementById('about-modal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('about-modal')) {
+    document.getElementById('about-modal').classList.remove('open');
+  }
+});
+
 document.getElementById('submit-album-btn').addEventListener('click', () => {
   const name = document.getElementById('f-name').value.trim();
   const title = document.getElementById('f-title').value.trim();
@@ -1441,6 +1563,7 @@ window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     document.getElementById('modal-overlay').classList.remove('open');
     document.getElementById('add-modal').classList.remove('open');
+    document.getElementById('about-modal').classList.remove('open');
   }
 });
 </script>
